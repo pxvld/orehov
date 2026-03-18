@@ -36,6 +36,7 @@
 · Гибкость: Вы сами решаете, какой должна быть сложность пароля.
 · Простота: Минималистичный интерфейс, понятный любому пользователю.
 · Кроссплатформенность: (Если на Python) Работает на Windows, macOS и Linux
-![IMG_6870](https://github.com/user-attachments/assets/b054182d-d7fd-4c7f-854b-26e41c9d0cda)
+![IMG_6902](https://github.com/user-attachments/assets/0a8fbba9-3bc4-4c99-be59-fe6733e2856e)
+![IMG_6901](https://github.com/user-attachments/assets/92aa90f4-0548-4bff-a88f-ebfd05ec82ae)
 
 
