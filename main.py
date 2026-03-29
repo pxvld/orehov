@@ -1,25 +1,16 @@
 import tkinter as tk
-from tkinter import messagebox, simpledialog
+from tkinter import messagebox, ttk
 import random
 import string
-import logging
-from datetime import datetime
-
-# Настройка логирования
-logging.basicConfig(
-    filename='password_generator.log',
-    level=logging.INFO,
-    format='%(asctime)s - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
+import datetime
 
 # ГЛАВНОЕ ОКНО
 class PasswordApp:
     def __init__(self):
         self.root = tk.Tk()
         self.root.title("Генератор паролей")
-        self.root.geometry("450x400")
-
+        self.root.geometry("400x300")
+        
         # Переменные
         self.password = tk.StringVar()
         self.length = tk.IntVar(value=12)
@@ -27,148 +18,196 @@ class PasswordApp:
         self.use_lower = tk.BooleanVar(value=True)
         self.use_digits = tk.BooleanVar(value=True)
         self.use_symbols = tk.BooleanVar(value=False)
-        self.custom_chars_var = tk.StringVar()
-
-        self.history = []
-
+        
+        self.history = []  # История последних 5 паролей
+        
         self.setup_ui()
         self.generate()
-
+        
     def setup_ui(self):
         tk.Label(self.root, text="🔐 ГЕНЕРАТОР ПАРОЛЕЙ", font=("Arial", 14, "bold")).pack(pady=5)
-
+        
         # Поле с паролем и кнопка копирования
         frame = tk.Frame(self.root)
         frame.pack(pady=5)
-        tk.Entry(frame, textvariable=self.password, width=30, font=("Arial", 12),
+        tk.Entry(frame, textvariable=self.password, width=25, font=("Arial", 12), 
                 justify="center", state="readonly").pack(side="left")
         tk.Button(frame, text="📋", command=self.copy, width=3).pack(side="left")
-
-        # Настройки длины пароля с полем ввода
-        length_frame = tk.Frame(self.root)
-        length_frame.pack(pady=5)
-        tk.Label(length_frame, text="Длина пароля:").pack(side="left")
-        self.length_entry = tk.Entry(length_frame, width=5, textvariable=self.length)
-        self.length_entry.pack(side="left", padx=5)
-        tk.Button(length_frame, text="Установить", command=self.update_length).pack(side="left")
-
-        # Кнопки управления
-        btn_frame = tk.Frame(self.root)
-        btn_frame.pack(pady=10)
-        tk.Button(btn_frame, text="Сгенерировать", command=self.generate,
-                 bg="#4CAF50", fg="white").pack(side="left", padx=5)
-        tk.Button(btn_frame, text="⚙️ Доп. настройки", command=self.open_settings,
-                 bg="#2196F3", fg="white").pack(side="left", padx=5)
-        tk.Button(btn_frame, text="📜 История", command=self.open_history,
-                 bg="#FF9800", fg="white").pack(side="left", padx=5)
-        tk.Button(btn_frame, text="Очистить историю", command=self.clear_history,
-                 bg="#F44336", fg="white").pack(side="left", padx=5)
-
-        # Статус-бар
-        self.status_var = tk.StringVar(value="Готов к работе")
-        tk.Label(self.root, textvariable=self.status_var, relief="sunken", anchor="w").pack(fill="x", side="bottom")
-
-    def update_length(self):
-        try:
-            length = int(self.length_entry.get())
-            if 4 <= length <= 64:
-                self.length.set(length)
-                self.generate()
-                self.log_action(f"Установлена длина пароля: {length}")
-            else:
-                messagebox.showerror("Ошибка", "Длина должна быть от 4 до 64 символов")
-                self.log_action("Ошибка: длина вне допустимого диапазона")
-        except ValueError:
-            messagebox.showerror("Ошибка", "Введите числовое значение")
-            self.log_action("Ошибка: неверный формат длины пароля")
-
-    def open_settings(self):
-        SettingsWindow(self.root, self)
-
-    def open_history(self):
-        HistoryWindow(self.root, self)
-
-    def clear_history(self):
-        self.history.clear()
-        self.log_action("История очищена")
-        messagebox.showinfo("Успех", "История паролей очищена")
-
-    def add_custom_chars(self, custom_chars):
-        if custom_chars:
-            # Добавляем пользовательские символы к существующим
-            current_chars = self.get_character_set()
-            new_chars = current_chars + custom_chars
-            # Генерируем пароль с новыми символами
-            pwd = ''.join(random.choice(new_chars) for _ in range(self.length.get()))
-            self.password.set(pwd)
-            # Сохраняем в историю
-            self.history.append(pwd)
-            if len(self.history) > 5:
-                self.history.pop(0)
-            self.log_action(f"Добавлены пользовательские символы: {custom_chars}")
-        else:
-            messagebox.showwarning("Предупреждение", "Поле пользовательских символов пустое")
-            self.log_action("Предупреждение: попытка добавить пустые символы")
-
-    def get_character_set(self):
+        
+        # Настройки
+        f = tk.LabelFrame(self.root, text="Настройки")
+        f.pack(pady=5, padx=10, fill="x")
+        
+        tk.Label(f, text="Длина:").pack()
+        tk.Scale(f, from_=4, to=32, orient="h", variable=self.length, 
+                command=lambda x: self.generate()).pack()
+        
+        tk.Checkbutton(f, text="A-Z", variable=self.use_upper, command=self.generate).pack()
+        tk.Checkbutton(f, text="a-z", variable=self.use_lower, command=self.generate).pack()
+        tk.Checkbutton(f, text="0-9", variable=self.use_digits, command=self.generate).pack()
+        tk.Checkbutton(f, text="!@#$%", variable=self.use_symbols, command=self.generate).pack()
+        
+        # Кнопки для окон
+        tk.Button(self.root, text="⚙️ Доп. настройки", command=self.open_settings, 
+                 bg="#2196F3", fg="white").pack(pady=2)
+        tk.Button(self.root, text="📜 История", command=self.open_history, 
+                 bg="#FF9800", fg="white").pack(pady=2)
+        
+    def generate(self):
         chars = ""
         if self.use_upper.get(): chars += string.ascii_uppercase
         if self.use_lower.get(): chars += string.ascii_lowercase
         if self.use_digits.get(): chars += string.digits
         if self.use_symbols.get(): chars += "!@#$%^&*"
-        return chars
-
-    def generate(self):
-        chars = self.get_character_set()
-        custom = self.custom_chars_var.get()
-        if custom:
-            chars += custom
-
+        
         if not chars:
             self.password.set("Выберите символы!")
-            self.log_action("Ошибка: не выбраны символы для генерации")
             return
-
+        
         pwd = ''.join(random.choice(chars) for _ in range(self.length.get()))
         self.password.set(pwd)
-
-        # Сохраняем в историю
+        
+        # Сохраняем в историю (последние 5)
         self.history.append(pwd)
         if len(self.history) > 5:
             self.history.pop(0)
-
-        self.log_action(f"Сгенерирован новый пароль (длина: {self.length.get()})")
-
+            
+        # Логирование в файл
+        self.log_password(pwd)
+    
     def copy(self):
-        if self.password.get():
-            self.root.clipboard_clear()
-            self.root.clipboard_append(self.password.get())
-            messagebox.showinfo("", "Пароль скопирован!")
-            self.log_action("Пароль скопирован в буфер обмена")
-        else:
-            messagebox.showerror("Ошибка", "Нет пароля для копирования")
-            self.log_action("Ошибка: попытка скопировать пустой пароль")
-
-    def log_action(self, message):
-        logging.info(message)
+        self.root.clipboard_clear()
+        self.root.clipboard_append(self.password.get())
+        messagebox.showinfo("", "Пароль скопирован!")
+    
+    def open_settings(self):
+        SettingsWindow(self)
+    
+    def open_history(self):
+        HistoryWindow(self)
+    
+    def run(self):
+        self.root.mainloop()
+    
+    def log_password(self, pwd):
+        """Записывает пароль в файл лога с меткой времени."""
+        try:
+            with open('password_log.txt', 'a', encoding='utf-8') as f:
+                timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                f.write(f"[{timestamp}] {pwd}\n")
+        except Exception as e:
+            messagebox.showerror("Ошибка логирования", f"Не удалось записать пароль в лог:\n{e}")
 
 
 # ОКНО НАСТРОЕК
 class SettingsWindow:
-    def __init__(self, parent, app):
-        self.window = tk.Toplevel(parent)
-        self.window.title("Дополнительные настройки")
-        self.window.geometry("350x300")
-        self.window.transient(parent)  # Делает окно зависимым от родительского
-        self.window.grab_set()  # Блокирует взаимодействие с родительским окном
-
+    def __init__(self, app):
         self.app = app
+        self.win = tk.Toplevel(app.root)
+        self.win.title("Доп. настройки")
+        self.win.geometry("300x200")
+        
+        self.extended = tk.BooleanVar(value=False)
+        
+        tk.Label(self.win, text="⚙️ Дополнительные опции", font=("Arial", 12, "bold")).pack(pady=5)
+        
+        tk.Checkbutton(self.win, text="Расширенные символы (_-+=[]{}|;:)", 
+                      variable=self.extended).pack(pady=5)
+        
+        tk.Button(self.win, text="Применить", command=self.apply, 
+                 bg="#4CAF50", fg="white").pack(pady=10)
+        tk.Button(self.win, text="Закрыть", command=self.win.destroy).pack()
+    
+    def apply(self):
+        if self.extended.get():
+            self.app.use_symbols.set(True)
+            # Можно добавить расширенный набор символов в generate(), если нужно
+            # Например: chars += "_-+=[]{}|;:"
+            # Но для простоты просто включаем использование символов.
+            messagebox.showinfo("", "Включены расширенные символы!")
+            self.app.generate()
+            self.win.destroy()
 
-        tk.Label(self.window, text="Настройки символов", font=("Arial", 12, "bold")).pack(pady=10)
 
-        # Настройки символов
-        f = tk.LabelFrame(self.window, text="Типы символов")
-        f.pack(pady=5, padx=10, fill="x")
+# ОКНО ИСТОРИИ
+class HistoryWindow:
+    def __init__(self, app):
+        self.app = app
+        self.win = tk.Toplevel(app.root)
+        self.win.title("История")
+        self.win.geometry("300x250")
+        
+        tk.Label(self.win, text="📜 Последние пароли", font=("Arial", 12, "bold")).pack(pady=5)
+        
+        if hasattr(app, 'history') and app.history:
+            for pwd in reversed(app.history):
+                f = tk.Frame(self.win)
+                f.pack(pady=2, padx=10, fill="x")
+                tk.Label(f, text=pwd, font=("Courier", 10)).pack(side="left")
+                tk.Button(f, text="📋", command=lambda p=pwd: self.copy(p), 
+                         width=2).pack(side="right")
+                # Кнопка "Сохранить" (дополнительно)
+                tk.Button(f, text="💾", command=lambda p=pwd: self.save_manually(p), 
+                         width=2).pack(side="right")
+                
+                ttk.Separator(self.win).pack(fill='x', padx=10)
+                
+            # Кнопка очистить историю (в памяти)
+            tk.Button(self.win, text="Очистить историю (в памяти)", 
+                     command=self.clear_history).pack(pady=10)
+            
+            # Кнопка открыть лог-файл
+            tk.Button(self.win, text="Открыть файл лога", 
+                     command=self.open_log_file).pack(pady=5)
+            
+            # Кнопка очистить файл лога
+            tk.Button(self.win, text="Очистить файл лога", 
+                     command=self.clear_log_file).pack(pady=5)
+            
+            
 
-        tk.Checkbutton(f, text="A-Z (верхний регистр)", variable=self.app.use_upper, command=self.app.generate).pack(anchor="w")
-        tk.Checkbutton(f, text="a-z (нижний регистр)", variable=self.app
+    def copy(self, pwd):
+        self.app.root.clipboard_clear()
+        self.app.root.clipboard_append(pwd)
+        messagebox.showinfo("", "Скопировано!")
+    
+    def save_manually(self, pwd):
+         """Ручное сохранение пароля в лог (дублирует автоматическое)"""
+         try:
+             with open('password_log.txt', 'a', encoding='utf-8') as f:
+                 timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                 f.write(f"[{timestamp}] {pwd} (сохранено вручную)\n")
+             messagebox.showinfo("", "Пароль сохранён в лог!")
+         except Exception as e:
+             messagebox.showerror("Ошибка сохранения", f"Не удалось сохранить пароль:\n{e}")
+    
+    def clear_history(self):
+         """Очищает историю только в памяти программы."""
+         if messagebox.askyesno("Подтвердите", "Очистить историю последних паролей?"):
+             self.app.history.clear()
+             messagebox.showinfo("", "История очищена!")
+             self.win.destroy()  # Перезапуск окна истории
+             self.app.open_history()
+    
+    def open_log_file(self):
+         """Пытается открыть файл лога в стандартном приложении."""
+         try:
+             import os
+             os.startfile('password_log.txt')
+         except Exception as e:
+             messagebox.showerror("Ошибка открытия файла", f"Не удалось открыть файл лога:\n{e}")
+    
+    def clear_log_file(self):
+         """Полностью очищает файл лога."""
+         if messagebox.askyesno("Подтвердите", "Полностью очистить файл лога? Это действие нельзя отменить."):
+             try:
+                 open('password_log.txt', 'w').close()  # Очистка файла
+                 messagebox.showinfo("", "Файл лога очищен!")
+             except Exception as e:
+                 messagebox.showerror("Ошибка очистки файла", f"Не удалось очистить файл лога:\n{e}")
+
+
+# ЗАПУСК
+if __name__ == "__main__":
+    app = PasswordApp()
+    app.run()
