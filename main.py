@@ -3,6 +3,7 @@ from tkinter import messagebox, ttk
 import random
 import string
 import datetime
+import os # Импорт для работы с файлами
 
 # ГЛАВНОЕ ОКНО
 class PasswordApp:
@@ -95,6 +96,8 @@ class PasswordApp:
             with open('password_log.txt', 'a', encoding='utf-8') as f:
                 timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 f.write(f"[{timestamp}] {pwd}\n")
+                # Добавим пустую строку для разделения записей (опционально)
+                f.write("\n")
         except Exception as e:
             messagebox.showerror("Ошибка логирования", f"Не удалось записать пароль в лог:\n{e}")
 
@@ -121,9 +124,6 @@ class SettingsWindow:
     def apply(self):
         if self.extended.get():
             self.app.use_symbols.set(True)
-            # Можно добавить расширенный набор символов в generate(), если нужно
-            # Например: chars += "_-+=[]{}|;:"
-            # Но для простоты просто включаем использование символов.
             messagebox.showinfo("", "Включены расширенные символы!")
             self.app.generate()
             self.win.destroy()
@@ -176,7 +176,7 @@ class HistoryWindow:
          try:
              with open('password_log.txt', 'a', encoding='utf-8') as f:
                  timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                 f.write(f"[{timestamp}] {pwd} (сохранено вручную)\n")
+                 f.write(f"[{timestamp}] {pwd} (сохранено вручную)\n\n")
              messagebox.showinfo("", "Пароль сохранён в лог!")
          except Exception as e:
              messagebox.showerror("Ошибка сохранения", f"Не удалось сохранить пароль:\n{e}")
@@ -192,7 +192,6 @@ class HistoryWindow:
     def open_log_file(self):
          """Пытается открыть файл лога в стандартном приложении."""
          try:
-             import os
              os.startfile('password_log.txt')
          except Exception as e:
              messagebox.showerror("Ошибка открытия файла", f"Не удалось открыть файл лога:\n{e}")
