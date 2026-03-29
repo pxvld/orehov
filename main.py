@@ -27,6 +27,9 @@ class PasswordApp:
         self.use_lower = tk.BooleanVar(value=True)
         self.use_digits = tk.BooleanVar(value=True)
         self.use_symbols = tk.BooleanVar(value=False)
+        self.custom_chars_var = tk.StringVar()
+
+        self.history = []
 
         self.setup_ui()
         self.generate()
@@ -49,15 +52,6 @@ class PasswordApp:
         self.length_entry.pack(side="left", padx=5)
         tk.Button(length_frame, text="Установить", command=self.update_length).pack(side="left")
 
-        # Настройки символов
-        f = tk.LabelFrame(self.root, text="Настройки символов")
-        f.pack(pady=5, padx=10, fill="x")
-
-        tk.Checkbutton(f, text="A-Z (верхний регистр)", variable=self.use_upper, command=self.generate).pack(anchor="w")
-        tk.Checkbutton(f, text="a-z (нижний регистр)", variable=self.use_lower, command=self.generate).pack(anchor="w")
-        tk.Checkbutton(f, text="0-9 (цифры)", variable=self.use_digits, command=self.generate).pack(anchor="w")
-        tk.Checkbutton(f, text="!@#$%^&* (специальные)", variable=self.use_symbols, command=self.generate).pack(anchor="w")
-
         # Кнопки управления
         btn_frame = tk.Frame(self.root)
         btn_frame.pack(pady=10)
@@ -70,20 +64,9 @@ class PasswordApp:
         tk.Button(btn_frame, text="Очистить историю", command=self.clear_history,
                  bg="#F44336", fg="white").pack(side="left", padx=5)
 
-        # Поле для ввода пользовательских символов
-        custom_frame = tk.LabelFrame(self.root, text="Пользовательские символы")
-        custom_frame.pack(pady=5, padx=10, fill="x")
-        tk.Label(custom_frame, text="Добавьте свои символы:").pack()
-        self.custom_chars = tk.Entry(custom_frame, width=40)
-        self.custom_chars.pack(pady=2)
-        tk.Button(custom_frame, text="Добавить и сгенерировать",
-                 command=self.add_custom_chars).pack(pady=2)
-
         # Статус-бар
         self.status_var = tk.StringVar(value="Готов к работе")
         tk.Label(self.root, textvariable=self.status_var, relief="sunken", anchor="w").pack(fill="x", side="bottom")
-
-        self.generate()
 
     def update_length(self):
         try:
@@ -99,22 +82,30 @@ class PasswordApp:
             messagebox.showerror("Ошибка", "Введите числовое значение")
             self.log_action("Ошибка: неверный формат длины пароля")
 
-    def add_custom_chars(self):
-        custom = self.custom_chars.get()
-        if custom:
+    def open_settings(self):
+        SettingsWindow(self.root, self)
+
+    def open_history(self):
+        HistoryWindow(self.root, self)
+
+    def clear_history(self):
+        self.history.clear()
+        self.log_action("История очищена")
+        messagebox.showinfo("Успех", "История паролей очищена")
+
+    def add_custom_chars(self, custom_chars):
+        if custom_chars:
             # Добавляем пользовательские символы к существующим
             current_chars = self.get_character_set()
-            new_chars = current_chars + custom
+            new_chars = current_chars + custom_chars
             # Генерируем пароль с новыми символами
             pwd = ''.join(random.choice(new_chars) for _ in range(self.length.get()))
             self.password.set(pwd)
             # Сохраняем в историю
-            if not hasattr(self, 'history'):
-                self.history = []
             self.history.append(pwd)
             if len(self.history) > 5:
                 self.history.pop(0)
-            self.log_action(f"Добавлены пользовательские символы: {custom}")
+            self.log_action(f"Добавлены пользовательские символы: {custom_chars}")
         else:
             messagebox.showwarning("Предупреждение", "Поле пользовательских символов пустое")
             self.log_action("Предупреждение: попытка добавить пустые символы")
@@ -129,7 +120,7 @@ class PasswordApp:
 
     def generate(self):
         chars = self.get_character_set()
-        custom = self.custom_chars.get()
+        custom = self.custom_chars_var.get()
         if custom:
             chars += custom
 
@@ -142,8 +133,6 @@ class PasswordApp:
         self.password.set(pwd)
 
         # Сохраняем в историю
-        if not hasattr(self, 'history'):
-            self.history = []
         self.history.append(pwd)
         if len(self.history) > 5:
             self.history.pop(0)
@@ -158,4 +147,28 @@ class PasswordApp:
             self.log_action("Пароль скопирован в буфер обмена")
         else:
             messagebox.showerror("Ошибка", "Нет пароля для копирования")
-            self.log_action("Ошибка: попытка скопировать пустой пароль
+            self.log_action("Ошибка: попытка скопировать пустой пароль")
+
+    def log_action(self, message):
+        logging.info(message)
+
+
+# ОКНО НАСТРОЕК
+class SettingsWindow:
+    def __init__(self, parent, app):
+        self.window = tk.Toplevel(parent)
+        self.window.title("Дополнительные настройки")
+        self.window.geometry("350x300")
+        self.window.transient(parent)  # Делает окно зависимым от родительского
+        self.window.grab_set()  # Блокирует взаимодействие с родительским окном
+
+        self.app = app
+
+        tk.Label(self.window, text="Настройки символов", font=("Arial", 12, "bold")).pack(pady=10)
+
+        # Настройки символов
+        f = tk.LabelFrame(self.window, text="Типы символов")
+        f.pack(pady=5, padx=10, fill="x")
+
+        tk.Checkbutton(f, text="A-Z (верхний регистр)", variable=self.app.use_upper, command=self.app.generate).pack(anchor="w")
+        tk.Checkbutton(f, text="a-z (нижний регистр)", variable=self.app
