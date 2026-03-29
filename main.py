@@ -3,7 +3,7 @@ from tkinter import messagebox, ttk
 import random
 import string
 import datetime
-import os # Импорт для работы с файлами
+import os
 
 # ГЛАВНОЕ ОКНО
 class PasswordApp:
@@ -95,9 +95,7 @@ class PasswordApp:
         try:
             with open('password_log.txt', 'a', encoding='utf-8') as f:
                 timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                f.write(f"[{timestamp}] {pwd}\n")
-                # Добавим пустую строку для разделения записей (опционально)
-                f.write("\n")
+                f.write(f"[{timestamp}] {pwd}\n\n")
         except Exception as e:
             messagebox.showerror("Ошибка логирования", f"Не удалось записать пароль в лог:\n{e}")
 
@@ -164,8 +162,6 @@ class HistoryWindow:
             tk.Button(self.win, text="Очистить файл лога", 
                      command=self.clear_log_file).pack(pady=5)
             
-            
-
     def copy(self, pwd):
         self.app.root.clipboard_clear()
         self.app.root.clipboard_append(pwd)
@@ -176,7 +172,7 @@ class HistoryWindow:
          try:
              with open('password_log.txt', 'a', encoding='utf-8') as f:
                  timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                 f.write(f"[{timestamp}] {pwd} (сохранено вручную)\n\n")
+                 f.write(f"[{timestamp}] {pwd} (сохранено вручную)\n")
              messagebox.showinfo("", "Пароль сохранён в лог!")
          except Exception as e:
              messagebox.showerror("Ошибка сохранения", f"Не удалось сохранить пароль:\n{e}")
